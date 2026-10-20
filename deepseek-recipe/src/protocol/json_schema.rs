@@ -64,9 +64,9 @@ pub(crate) enum JsonSchemaType {
         description: Option<String>,
         // Retain legacy `$def` as well as the standard definition containers.
         #[serde(rename = "$defs", skip_serializing_if = "Option::is_none")]
-        defs: Option<IndexMap<String, Box<JsonSchema>>>,
+        defs: Option<Box<IndexMap<String, Box<JsonSchema>>>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        definitions: Option<IndexMap<String, Box<JsonSchema>>>,
+        definitions: Option<Box<IndexMap<String, Box<JsonSchema>>>>,
         #[serde(rename = "$def", skip_serializing_if = "Option::is_none")]
         def: Option<IndexMap<String, Box<JsonSchema>>>,
     },
@@ -209,7 +209,11 @@ impl JsonSchemaType {
                 for value in properties.values_mut() {
                     value.normalize(false)?;
                 }
-                for definitions in [def, defs, definitions].into_iter().flatten() {
+                for definitions in def
+                    .iter_mut()
+                    .chain(defs.iter_mut().map(Box::as_mut))
+                    .chain(definitions.iter_mut().map(Box::as_mut))
+                {
                     for value in definitions.values_mut() {
                         value.normalize(false)?;
                     }
